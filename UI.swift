@@ -1,5 +1,30 @@
 import SwiftUI
 
+// MARK: - MarketIndexCard
+struct MarketIndexCard: View {
+    let name: String
+    let value: String
+    let change: String
+    let isPositive: Bool
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(name)
+                .font(.caption)
+                .foregroundColor(.gray)
+            
+            Text(value)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+            
+            Text(change)
+                .font(.caption)
+                .foregroundColor(isPositive ? .green : .red)
+        }
+        .padding()
+    }
+}
+
 // MARK: - App Logo View
 struct LogoView: View {
     var body: some View {
@@ -164,5 +189,3 @@ struct EnhancedHomeView: View {
         }
     }
 }
-
-// Note: The MarketIndexCard in your main app's code can be used rather than reimplementing it here
