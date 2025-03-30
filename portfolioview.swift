@@ -52,10 +52,9 @@ struct PortfolioView: View {
                     }
                 }
                 .pickerStyle(SegmentedPickerStyle())
-                .padding(.top, 8) // Adds space between buttons and picker
+                .padding(.top, 8)
                 .padding(.horizontal)
 
-                
                 List {
                     // Portfolio Prediction Card
                     Section {
@@ -96,6 +95,58 @@ struct PortfolioView: View {
                         }
                         .padding(.vertical, 4)
                     }
+
+                    Section(header: Text("Your Holdings")) {
+                        ForEach(portfolioStocks.indices, id: \.self) { index in
+                            NavigationLink(destination: StockDetailView(stock: portfolioStocks[index])) {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack {
+                                        Text(portfolioStocks[index].symbol)
+                                            .font(.headline)
+                                        
+                                        Text(portfolioStocks[index].name)
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
+                                        
+                                        Spacer()
+                                        
+                                        VStack(alignment: .trailing) {
+                                            Text("$\(portfolioStocks[index].currentPrice, specifier: "%.2f")")
+                                                .font(.subheadline)
+                                            
+                                            Text("\(portfolioStocks[index].dailyChange > 0 ? "+" : "")\(portfolioStocks[index].dailyChange, specifier: "%.2f")%")
+                                                .font(.caption)
+                                                .foregroundColor(portfolioStocks[index].dailyChange >= 0 ? .green : .red)
+                                        }
+                                    }
+                                    
+                                    HStack {
+                                        Text("\(portfolioStocks[index].shares) shares")
+                                            .font(.footnote)
+                                            .foregroundColor(.gray)
+                                        
+                                        Spacer()
+                                        
+                                        Text("$\(portfolioStocks[index].totalValue, specifier: "%.2f")")
+                                            .font(.footnote)
+                                            .fontWeight(.semibold)
+                                    }
+                                    
+                                    // Prediction indicator dynamically updating based on forecastPeriod
+                                    HStack {
+                                        Image(systemName: "chart.line.uptrend.xyaxis")
+                                            .foregroundColor(.blue)
+                                            .font(.caption)
+                                        
+                                        Text("Predicted: \(portfolioStocks[index].predictedChange(for: forecastPeriod) > 0 ? "+" : "")\(portfolioStocks[index].predictedChange(for: forecastPeriod), specifier: "%.1f")% (\(forecastPeriod.rawValue))")
+                                            .font(.caption)
+                                            .foregroundColor(.blue)
+                                    }
+                                }
+                                .padding(.vertical, 4)
+                            }
+                        }
+                    }
                 }
             }
             .navigationTitle("Portfolio")
@@ -107,7 +158,7 @@ struct PortfolioView: View {
             }
         }
     }
-        
+    
     private func calculateTotalValue() -> Double {
         return portfolioStocks.reduce(0) { $0 + $1.totalValue } + cashAvailable
     }
@@ -120,18 +171,20 @@ struct PortfolioView: View {
         let totalValue = calculateTotalValue()
         return totalValue > 0 ? (calculateDailyChange() / totalValue) * 100 : 0
     }
-}
 
-extension PortfolioView {
     private func calculateProjectedGrowth() -> Double {
-        return portfolioStocks.reduce(0) { $0 + ($1.totalValue * $1.predictedChange(for: forecastPeriod) / 100) }
+        return portfolioStocks.reduce(0) { $0 + $1.predictedChange(for: forecastPeriod) }
     }
-    
+
     private func calculateProjectedGrowthPercentage() -> Double {
         let totalValue = calculateTotalValue()
         return totalValue > 0 ? (calculateProjectedGrowth() / totalValue) * 100 : 0
     }
-    
+}
+
+
+
+extension PortfolioView {
     private func CalculateTotalValue() -> Double {
         return portfolioStocks.reduce(0) { $0 + $1.totalValue } + cashAvailable
     }
@@ -363,8 +416,9 @@ class TwelveDataService: ObservableObject {
     }
 }
 
+// Updated AddStockView to handle existing stocks
 struct AddStockView: View {
-    @Environment(\ .presentationMode) var presentationMode
+    @Environment(\.presentationMode) var presentationMode
     @Binding var portfolioStocks: [PortfolioStock]
     @Binding var cashAvailable: Double
     @StateObject private var apiService = TwelveDataService()
@@ -499,15 +553,26 @@ struct AddStockView: View {
                                 let totalCost = Double(sharesInt) * stockPrice
                                 
                                 if totalCost <= cashAvailable {
-                                    let newStock = PortfolioStock(
-                                        symbol: selectedStock.symbol,
-                                        name: selectedStock.name,
-                                        currentPrice: stockPrice,
-                                        shares: sharesInt,
-                                        dailyChange: 0.0,
-                                        predictedChange: 5.0
-                                    )
-                                    portfolioStocks.append(newStock)
+                                    // Check if stock already exists in portfolio
+                                    if let existingIndex = portfolioStocks.firstIndex(where: { $0.symbol == selectedStock.symbol }) {
+                                        // Update existing stock by adding shares
+                                        var updatedStock = portfolioStocks[existingIndex]
+                                        updatedStock.shares += sharesInt
+                                        portfolioStocks[existingIndex] = updatedStock
+                                    } else {
+                                        // Add new stock
+                                        let newStock = PortfolioStock(
+                                            symbol: selectedStock.symbol,
+                                            name: selectedStock.name,
+                                            currentPrice: stockPrice,
+                                            shares: sharesInt,
+                                            dailyChange: 0.0,
+                                            predictedChange: 5.0
+                                        )
+                                        portfolioStocks.append(newStock)
+                                    }
+                                    
+                                    // Deduct cost from available cash
                                     cashAvailable -= totalCost
                                     presentationMode.wrappedValue.dismiss()
                                 } else {
@@ -545,10 +610,222 @@ struct AddStockView: View {
     }
 }
 
+// Updated RemoveStockView to properly handle stock removal
+struct RemoveStockView: View {
+    @Environment(\.presentationMode) var presentationMode
+    @Binding var portfolioStocks: [PortfolioStock]
+    @Binding var cashAvailable: Double
+    
+    @State private var selectedStock: PortfolioStock?
+    @State private var sharesToRemove: String = ""
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                // Stock selection list
+                if selectedStock == nil {
+                    List {
+                        ForEach(portfolioStocks) { stock in
+                            Button(action: {
+                                selectedStock = stock
+                                sharesToRemove = "\(stock.shares)" // Default to all shares
+                            }) {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(stock.symbol)
+                                            .font(.headline)
+                                        
+                                        Text(stock.name)
+                                            .font(.subheadline)
+                                            .foregroundColor(.gray)
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    VStack(alignment: .trailing, spacing: 4) {
+                                        Text("$\(stock.currentPrice, specifier: "%.2f")")
+                                            .font(.subheadline)
+                                        
+                                        Text("\(stock.shares) shares")
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
+                                    }
+                                }
+                                .padding(.vertical, 4)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                } else {
+                    // Share removal form
+                    VStack(spacing: 20) {
+                        HStack {
+                            Text("Selected Stock:")
+                                .font(.headline)
+                            
+                            Spacer()
+                            
+                            Button(action: {
+                                self.selectedStock = nil
+                                self.sharesToRemove = ""
+                            }) {
+                                Text("Change")
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                        
+                        HStack(spacing: 16) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(selectedStock!.symbol)
+                                    .font(.title2)
+                                    .fontWeight(.bold)
+                                
+                                Text(selectedStock!.name)
+                                    .font(.subheadline)
+                                    .foregroundColor(.gray)
+                            }
+                            
+                            Spacer()
+                            
+                            VStack(alignment: .trailing, spacing: 4) {
+                                Text("$\(selectedStock!.currentPrice, specifier: "%.2f")")
+                                    .font(.headline)
+                                
+                                Text("\(selectedStock!.shares) shares available")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(12)
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Shares to Sell")
+                                .font(.headline)
+                            
+                            TextField("Enter shares", text: $sharesToRemove)
+                                .keyboardType(.numberPad)
+                                .padding()
+                                .background(Color.gray.opacity(0.1))
+                                .cornerRadius(8)
+                        }
+                        
+                        if !sharesToRemove.isEmpty, let sharesToRemoveInt = Int(sharesToRemove), sharesToRemoveInt > 0 {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Sale Summary")
+                                    .font(.headline)
+                                
+                                VStack(spacing: 12) {
+                                    HStack {
+                                        Text("Share Price")
+                                        Spacer()
+                                        Text("$\(selectedStock!.currentPrice, specifier: "%.2f")")
+                                    }
+                                    
+                                    HStack {
+                                        Text("Number of Shares")
+                                        Spacer()
+                                        Text("\(sharesToRemove)")
+                                    }
+                                    
+                                    Divider()
+                                    
+                                    let totalValue = (Double(sharesToRemove) ?? 0) * selectedStock!.currentPrice
+                                    
+                                    HStack {
+                                        Text("Total Value")
+                                            .fontWeight(.bold)
+                                        Spacer()
+                                        Text("$\(totalValue, specifier: "%.2f")")
+                                            .fontWeight(.bold)
+                                    }
+                                    
+                                    HStack {
+                                        Text("Current Cash")
+                                            .fontWeight(.medium)
+                                        Spacer()
+                                        Text("$\(cashAvailable, specifier: "%.2f")")
+                                            .fontWeight(.medium)
+                                    }
+                                    
+                                    HStack {
+                                        Text("New Cash Balance")
+                                            .fontWeight(.medium)
+                                        Spacer()
+                                        Text("$\(cashAvailable + totalValue, specifier: "%.2f")")
+                                            .fontWeight(.medium)
+                                            .foregroundColor(.green)
+                                    }
+                                }
+                                .padding()
+                                .background(Color.gray.opacity(0.1))
+                                .cornerRadius(12)
+                            }
+                        }
+                        
+                        Spacer()
+                        
+                        Button(action: {
+                            if let sharesToRemoveInt = Int(sharesToRemove),
+                               let stock = selectedStock,
+                               sharesToRemoveInt > 0 && sharesToRemoveInt <= stock.shares {
+                                
+                                // Calculate cash to add
+                                let cashToAdd = Double(sharesToRemoveInt) * stock.currentPrice
+                                
+                                // Increase available cash
+                                cashAvailable += cashToAdd
+                                
+                                // Update or remove the stock from portfolio
+                                if let index = portfolioStocks.firstIndex(where: { $0.id == stock.id }) {
+                                    if sharesToRemoveInt < stock.shares {
+                                        // Update shares count only
+                                        var updatedStock = stock
+                                        updatedStock.shares -= sharesToRemoveInt
+                                        portfolioStocks[index] = updatedStock
+                                    } else {
+                                        // Remove the stock completely
+                                        portfolioStocks.remove(at: index)
+                                    }
+                                }
+                                
+                                presentationMode.wrappedValue.dismiss()
+                            }
+                        }) {
+                            Text("Sell Shares")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(
+                                    (sharesToRemove.isEmpty ||
+                                     Int(sharesToRemove) ?? 0 <= 0 ||
+                                     Int(sharesToRemove) ?? 0 > (selectedStock?.shares ?? 0)) ?
+                                    Color.gray : Color.red
+                                )
+                                .cornerRadius(12)
+                        }
+                        .disabled(
+                            sharesToRemove.isEmpty ||
+                            Int(sharesToRemove) ?? 0 <= 0 ||
+                            Int(sharesToRemove) ?? 0 > (selectedStock?.shares ?? 0)
+                        )
+                    }
+                    .padding()
+                }
+            }
+            .navigationTitle("Sell Stocks")
+            .navigationBarItems(
+                trailing: Button("Cancel") {
+                    presentationMode.wrappedValue.dismiss()
+                }
+            )
+        }
+    }
+}
 
-
-
-// Add this method inside the PortfolioView struct where portfolioStocks and cashAvailable are defined
+// Updated removeStock method for the PortfolioView
 extension PortfolioView {
     func removeStock(symbol: String, sharesToRemove: Int? = nil) {
         // Find the stock in the portfolio
@@ -584,7 +861,7 @@ extension PortfolioView {
 }
 
 // Also add a RemoveStockView struct to use with the sheet presentation
-struct RemoveStockView: View {
+struct removeStockView: View {
     @Environment(\.presentationMode) var presentationMode
     @Binding var portfolioStocks: [PortfolioStock]
     @Binding var cashAvailable: Double
