@@ -336,8 +336,12 @@ struct StockPrice: Codable {
     }
 }
 
-struct StockPriceResponse: Codable {
-    let price: StockPrice
+struct StockPriceResponse: Decodable {
+    let price: String
+    
+    var priceDouble: Double {
+        return Double(price) ?? 0.0
+    }
 }
 
 // MARK: - API Service
@@ -407,18 +411,18 @@ class TwelveDataService: ObservableObject {
             do {
                 let priceResponse = try JSONDecoder().decode(StockPriceResponse.self, from: data)
                 DispatchQueue.main.async {
-                    completion(.success(priceResponse.price.priceDouble))
+                    completion(.success(priceResponse.priceDouble))
                 }
             } catch {
                 DispatchQueue.main.async {
                     completion(.failure(error))
                 }
             }
+
         }.resume()
     }
 }
 
-// MARK: - Add Stock View
 struct AddStockView: View {
     @Environment(\ .presentationMode) var presentationMode
     @Binding var portfolioStocks: [PortfolioStock]
@@ -437,13 +441,11 @@ struct AddStockView: View {
         isLoadingPrice = true
         errorMessage = ""
         
-        apiService.fetchSymbols() // First fetch available symbols
+        apiService.fetchSymbols()
         
-        // Find the symbol in the list of available symbols
         if let stock = apiService.symbols.first(where: { $0.symbol == symbol }) {
             selectedStock = stock
             
-            // Then fetch the price for that symbol
             apiService.fetchStockPrice(symbol: symbol) { result in
                 switch result {
                 case .success(let price):
@@ -455,14 +457,12 @@ struct AddStockView: View {
                 }
             }
         } else {
-            // If the symbol search doesn't yield results immediately, fetch directly
             apiService.fetchStockPrice(symbol: symbol) { result in
                 switch result {
                 case .success(let price):
-                    // Create a basic stock info since we don't have full details
                     self.selectedStock = TwelveDataSymbol(
                         symbol: symbol,
-                        name: symbol, // Use symbol as name temporarily
+                        name: symbol,
                         currency: "USD",
                         exchange: "Unknown",
                         country: "Unknown",
@@ -481,14 +481,6 @@ struct AddStockView: View {
     var body: some View {
         NavigationView {
             VStack {
-                HStack {
-                    Text("Cash Available: $\(cashAvailable, specifier: "%.2f")")
-                        .font(.headline)
-                        .foregroundColor(.blue)
-                        .padding(.horizontal)
-                    Spacer()
-                }
-                
                 TextField("Enter stock symbol", text: $searchText)
                     .padding()
                     .background(Color.gray.opacity(0.1))
@@ -509,9 +501,7 @@ struct AddStockView: View {
                         HStack {
                             Text("Selected Stock:")
                                 .font(.headline)
-                            
                             Spacer()
-                            
                             Button(action: {
                                 self.selectedStock = nil
                                 self.stockPrice = 0.0
@@ -555,34 +545,6 @@ struct AddStockView: View {
                                 .disabled(isLoadingPrice || stockPrice <= 0)
                         }
                         
-                        if !shares.isEmpty && stockPrice > 0 {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Investment Summary")
-                                    .font(.headline)
-                                
-                                let totalInvestment = (Double(shares) ?? 0) * stockPrice
-                                
-                                HStack {
-                                    Text("Total Investment")
-                                        .fontWeight(.bold)
-                                    Spacer()
-                                    Text("$\(totalInvestment, specifier: "%.2f")")
-                                        .fontWeight(.bold)
-                                }
-                                
-                                HStack {
-                                    Text("Cash Available")
-                                        .fontWeight(.medium)
-                                    Spacer()
-                                    Text("$\(cashAvailable, specifier: "%.2f")")
-                                        .fontWeight(.medium)
-                                }
-                            }
-                            .padding()
-                            .background(Color.gray.opacity(0.1))
-                            .cornerRadius(12)
-                        }
-                        
                         if !errorMessage.isEmpty {
                             Text(errorMessage)
                                 .foregroundColor(.red)
@@ -597,30 +559,15 @@ struct AddStockView: View {
                                 let totalCost = Double(sharesInt) * stockPrice
                                 
                                 if totalCost <= cashAvailable {
-                                    Button(action: {
-                                        if let sharesInt = Int(shares), sharesInt > 0 {
-                                            let totalCost = Double(sharesInt) * stockPrice
-                                            
-                                            if totalCost <= cashAvailable {
-                                                // Create a new PortfolioStock and add it to the array
-                                                let newStock = PortfolioStock(
-                                                    symbol: selectedStock.symbol,
-                                                    name: selectedStock.name,
-                                                    currentPrice: stockPrice,
-                                                    shares: sharesInt,
-                                                    dailyChange: 0.0, // Default value, you might want to fetch this
-                                                    predictedChange: 5.0 // Default value, you might want to set this differently
-                                                )
-                                                portfolioStocks.append(newStock)
-                                                cashAvailable -= totalCost
-                                                presentationMode.wrappedValue.dismiss()
-                                            } else {
-                                                showInsufficientFundsAlert = true
-                                            }
-                                        }
-                                    }) {
-                                        // Button appearance code...
-                                    }
+                                    let newStock = PortfolioStock(
+                                        symbol: selectedStock.symbol,
+                                        name: selectedStock.name,
+                                        currentPrice: stockPrice,
+                                        shares: sharesInt,
+                                        dailyChange: 0.0,
+                                        predictedChange: 5.0
+                                    )
+                                    portfolioStocks.append(newStock)
                                     cashAvailable -= totalCost
                                     presentationMode.wrappedValue.dismiss()
                                 } else {
@@ -657,6 +604,7 @@ struct AddStockView: View {
         }
     }
 }
+
 
 
 
@@ -1148,5 +1096,3 @@ struct StockDetailView: View {
         }
     }
 }
-
-
