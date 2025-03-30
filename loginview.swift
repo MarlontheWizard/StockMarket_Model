@@ -108,8 +108,8 @@ struct LoginView: View {
         // For demo purposes, you can use these credentials:
         if email == "U" && password == "1" {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                userEmail = "user@example.com"
-                userName = "User"
+                userEmail = "goenka.y@northeastern.edu"
+                userName = "Yuvaraj Goenka"
                 isUserLoggedIn = true
                 isAuthenticated = true
             }
