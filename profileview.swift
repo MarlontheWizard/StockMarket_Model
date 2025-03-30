@@ -5,6 +5,7 @@ struct ProfileView: View {
     @AppStorage("isUserLoggedIn") private var isUserLoggedIn: Bool = false
     @AppStorage("userEmail") private var userEmail: String = ""
     @AppStorage("userName") private var userName: String = ""
+    @AppStorage("isDarkMode") private var isDarkMode: Bool = false
     
     var body: some View {
         NavigationView {
@@ -46,13 +47,14 @@ struct ProfileView: View {
                 }
                 
                 Section(header: Text("Preferences")) {
-                    NavigationLink(destination: Text("Theme settings")) {
-                        HStack {
-                            Image(systemName: "paintbrush.fill")
-                                .frame(width: 25)
-                                .foregroundColor(.blue)
-                            Text("Appearance")
-                        }
+                    HStack {
+                        Image(systemName: "paintbrush.fill")
+                            .frame(width: 25)
+                            .foregroundColor(.blue)
+                        Text("Dark Mode")
+                        Spacer()
+                        Toggle("", isOn: $isDarkMode)
+                            .labelsHidden()
                     }
                     
                     NavigationLink(destination: Text("Currency settings")) {
@@ -103,7 +105,6 @@ struct ProfileView: View {
     }
     
     func signOut() {
-        // Clear user data
         userEmail = ""
         userName = ""
         isUserLoggedIn = false
