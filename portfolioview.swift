@@ -5,11 +5,7 @@ struct PortfolioView: View {
     @State private var showAddStockSheet = false
     @State private var showRemoveStockSheet = false
     @State private var cashAvailable: Double = 100000.00 // Starting with $100,000
-    @State private var portfolioStocks: [PortfolioStock] = [
-        PortfolioStock(symbol: "AAPL", name: "Apple Inc.", currentPrice: 185.92, shares: 10, dailyChange: 1.27, predictedChange: 8.5),
-        PortfolioStock(symbol: "MSFT", name: "Microsoft Corp.", currentPrice: 420.45, shares: 5, dailyChange: -0.29, predictedChange: 5.2),
-        PortfolioStock(symbol: "AMZN", name: "Amazon.com Inc.", currentPrice: 183.50, shares: 8, dailyChange: 1.91, predictedChange: 12.3)
-    ]
+    @State private var portfolioStocks: [PortfolioStock] = []
     
     var body: some View {
         NavigationView {
