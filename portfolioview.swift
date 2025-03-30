@@ -63,10 +63,10 @@ struct PortfolioView: View {
                     
                     Section(header: Text("Portfolio Summary")) {
                         HStack {
-                            Text("Total Value")
+                            Text("Starting Value")
                             Spacer()
                             let projectedGrowth = calculateProjectedGrowth()
-                            Text("$\(100000 + projectedGrowth, specifier: "%.2f")")
+                            Text("$\(100000, specifier: "%.2f")")
                                 .fontWeight(.bold)
                         }
                         .padding(.vertical, 4)
@@ -392,11 +392,7 @@ struct StockPriceResponse: Decodable {
 
 // MARK: - API Service
 class TwelveDataService: ObservableObject {
-<<<<<<< HEAD
-    private let apiKey = "cf72cc9869b647acbe52160a2ebd9721"
-=======
     private let apiKey = "4347b40324b947c5a16bdc87d7c1ada8"
->>>>>>> 823f14a (final commit)
     @Published var symbols: [TwelveDataSymbol] = []
     @Published var isLoading = false
     @Published var errorMessage = ""
