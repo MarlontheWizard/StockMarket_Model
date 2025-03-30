@@ -6,157 +6,95 @@ struct PortfolioView: View {
     @State private var showRemoveStockSheet = false
     @State private var cashAvailable: Double = 100000.00 // Starting with $100,000
     @State private var portfolioStocks: [PortfolioStock] = []
+    @State private var forecastPeriod: ForecastPeriod = .thirtyDays
     
     var body: some View {
         NavigationView {
-            ZStack { // Wrap everything in a ZStack
-                VStack(spacing: 0) {
-                    HStack {
-                        Spacer()
-                        
-                        Button(action: {
-                            showRemoveStockSheet = true
-                        }) {
-                            HStack {
-                                Image(systemName: "minus")
-                                Text("Remove Stock")
-                            }
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 16)
-                            .background(Color.red.opacity(0.1))
-                            .foregroundColor(.red)
-                            .cornerRadius(8)
+            VStack(spacing: 0) {
+                // Action buttons in header
+                HStack {
+                    Button(action: {
+                        showRemoveStockSheet = true
+                    }) {
+                        HStack {
+                            Image(systemName: "minus")
+                            Text("Remove Stock")
                         }
-                        .padding(.horizontal, 4)
-                        .disabled(portfolioStocks.isEmpty)
-                        
-                        Button(action: {
-                            showAddStockSheet = true
-                        }) {
-                            HStack {
-                                Image(systemName: "plus")
-                                Text("Add Stock")
-                            }
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 16)
-                            .background(Color.blue.opacity(0.1))
-                            .foregroundColor(.blue)
-                            .cornerRadius(8)
-                        }
-                        .padding(.horizontal, 4)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 16)
+                        .background(Color.red.opacity(0.1))
+                        .foregroundColor(.red)
+                        .cornerRadius(8)
                     }
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
+                    .disabled(portfolioStocks.isEmpty)
                     
-                    List {
-                        // Portfolio Prediction Card
-                        Section {
-                            PortfolioPredictionCard(portfolioStocks: portfolioStocks)
+                    Spacer()
+                    
+                    Button(action: {
+                        showAddStockSheet = true
+                    }) {
+                        HStack {
+                            Image(systemName: "plus")
+                            Text("Add Stock")
                         }
-                        
-                        Section(header: Text("Portfolio Summary")) {
-                            HStack {
-                                Text("Total Value")
-                                Spacer()
-                                Text("$\(calculateTotalValue(), specifier: "%.2f")")
-                                    .fontWeight(.bold)
-                            }
-                            .padding(.vertical, 4)
-                            
-                            HStack {
-                                Text("Today's Change")
-                                Spacer()
-                                let dailyChange = calculateDailyChange()
-                                Text("\(dailyChange > 0 ? "+" : "")\(dailyChange, specifier: "$%.2f") (\(calculateDailyChangePercentage(), specifier: "%.2f")%)")
-                                    .foregroundColor(dailyChange >= 0 ? .green : .red)
-                            }
-                            .padding(.vertical, 4)
-                            
-                            HStack {
-                                Text("Cash Available")
-                                Spacer()
-                                Text("$\(cashAvailable, specifier: "%.2f")")
-                            }
-                            .padding(.vertical, 4)
-                            
-                            HStack {
-                                Text("Projected Growth (30d)")
-                                Spacer()
-                                let projectedGrowth = calculateProjectedGrowth()
-                                Text("+\(projectedGrowth, specifier: "$%.2f") (+\(calculateProjectedGrowthPercentage(), specifier: "%.2f")%)")
-                                    .foregroundColor(.blue)
-                            }
-                            .padding(.vertical, 4)
-                        }
-                        
-                        Section(header: Text("Your Holdings")) {
-                            ForEach(portfolioStocks.indices, id: \.self) { index in
-                                NavigationLink(destination: StockDetailView(stock: portfolioStocks[index])) {
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        HStack {
-                                            Text(portfolioStocks[index].symbol)
-                                                .font(.headline)
-                                            
-                                            Text(portfolioStocks[index].name)
-                                                .font(.caption)
-                                                .foregroundColor(.gray)
-                                            
-                                            Spacer()
-                                            
-                                            VStack(alignment: .trailing) {
-                                                Text("$\(portfolioStocks[index].currentPrice, specifier: "%.2f")")
-                                                    .font(.subheadline)
-                                                
-                                                Text("\(portfolioStocks[index].dailyChange > 0 ? "+" : "")\(portfolioStocks[index].dailyChange, specifier: "%.2f")%")
-                                                    .font(.caption)
-                                                    .foregroundColor(portfolioStocks[index].dailyChange >= 0 ? .green : .red)
-                                            }
-                                        }
-                                        
-                                        HStack {
-                                            Text("\(portfolioStocks[index].shares) shares")
-                                                .font(.footnote)
-                                                .foregroundColor(.gray)
-                                            
-                                            Spacer()
-                                            
-                                            Text("$\(portfolioStocks[index].totalValue, specifier: "%.2f")")
-                                                .font(.footnote)
-                                                .fontWeight(.semibold)
-                                        }
-                                        
-                                        // Prediction indicator
-                                        HStack {
-                                            Image(systemName: "chart.line.uptrend.xyaxis")
-                                                .foregroundColor(.blue)
-                                                .font(.caption)
-                                            
-                                            Text("Predicted: \(portfolioStocks[index].predictedChange > 0 ? "+" : "")\(portfolioStocks[index].predictedChange, specifier: "%.1f")% (30d)")
-                                                .font(.caption)
-                                                .foregroundColor(.blue)
-                                        }
-                                    }
-                                    .padding(.vertical, 4)
-                                }
-                            }
-                        }
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 16)
+                        .background(Color.blue.opacity(0.1))
+                        .foregroundColor(.blue)
+                        .cornerRadius(8)
                     }
                 }
+
+                // Forecast Period Picker below the buttons
+                Picker("Forecast Period", selection: $forecastPeriod) {
+                    ForEach(ForecastPeriod.allCases, id: \.self) { period in
+                        Text(period.rawValue).tag(period)
+                    }
+                }
+                .pickerStyle(SegmentedPickerStyle())
+                .padding(.top, 8) // Adds space between buttons and picker
+                .padding(.horizontal)
+
                 
-                // ✅ Floating Chat Button
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        NavigationLink(destination: ChatView()) {
-                            Image(systemName: "message.fill")
-                                .foregroundColor(.white)
-                                .padding()
-                                .background(Color.purple)
-                                .clipShape(Circle())
-                                .shadow(radius: 4)
+                List {
+                    // Portfolio Prediction Card
+                    Section {
+                        PortfolioPredictionCard(portfolioStocks: portfolioStocks, forecastPeriod: forecastPeriod)
+                    }
+                    
+                    Section(header: Text("Portfolio Summary")) {
+                        HStack {
+                            Text("Total Value")
+                            Spacer()
+                            Text("$\(calculateTotalValue(), specifier: "%.2f")")
+                                .fontWeight(.bold)
                         }
-                        .padding()
+                        .padding(.vertical, 4)
+                        
+                        HStack {
+                            Text("Today's Change")
+                            Spacer()
+                            let dailyChange = calculateDailyChange()
+                            Text("\(dailyChange > 0 ? "+" : "")\(dailyChange, specifier: "$%.2f") (\(calculateDailyChangePercentage(), specifier: "%.2f")%)")
+                                .foregroundColor(dailyChange >= 0 ? .green : .red)
+                        }
+                        .padding(.vertical, 4)
+                        
+                        HStack {
+                            Text("Cash Available")
+                            Spacer()
+                            Text("$\(cashAvailable, specifier: "%.2f")")
+                        }
+                        .padding(.vertical, 4)
+                        
+                        HStack {
+                            Text("Projected Growth (\(forecastPeriod.rawValue))")
+                            Spacer()
+                            let projectedGrowth = calculateProjectedGrowth()
+                            Text("+\(projectedGrowth, specifier: "$%.2f") (+\(calculateProjectedGrowthPercentage(), specifier: "%.2f")%)")
+                                .foregroundColor(.blue)
+                        }
+                        .padding(.vertical, 4)
                     }
                 }
             }
@@ -169,29 +107,119 @@ struct PortfolioView: View {
             }
         }
     }
-
+        
     private func calculateTotalValue() -> Double {
-        return portfolioStocks.reduce(0) { $0 + $1.totalValue }
+        return portfolioStocks.reduce(0) { $0 + $1.totalValue } + cashAvailable
     }
-    
+
     private func calculateDailyChange() -> Double {
-        return portfolioStocks.reduce(0) { $0 + ($1.totalValue * $1.dailyChange / 100) }
+        return portfolioStocks.reduce(0) { $0 + $1.dailyChange }
     }
-    
+
     private func calculateDailyChangePercentage() -> Double {
         let totalValue = calculateTotalValue()
         return totalValue > 0 ? (calculateDailyChange() / totalValue) * 100 : 0
     }
-    
+}
+
+extension PortfolioView {
     private func calculateProjectedGrowth() -> Double {
-        return portfolioStocks.reduce(0) { $0 + ($1.totalValue * $1.predictedChange / 100) }
+        return portfolioStocks.reduce(0) { $0 + ($1.totalValue * $1.predictedChange(for: forecastPeriod) / 100) }
     }
     
     private func calculateProjectedGrowthPercentage() -> Double {
         let totalValue = calculateTotalValue()
         return totalValue > 0 ? (calculateProjectedGrowth() / totalValue) * 100 : 0
     }
+    
+    private func CalculateTotalValue() -> Double {
+        return portfolioStocks.reduce(0) { $0 + $1.totalValue } + cashAvailable
+    }
+
 }
+
+
+// MARK: - Forecast Period Enum
+enum ForecastPeriod: String, CaseIterable {
+    case thirtyDays = "30 Days"
+    case sixMonths = "6 Months"
+    case oneYear = "1 Year"
+    case fiveYears = "5 Years"
+}
+
+// MARK: - Portfolio Prediction Card
+struct PortfolioPredictionCard: View {
+    let portfolioStocks: [PortfolioStock]
+    let forecastPeriod: ForecastPeriod
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Portfolio Prediction")
+                .font(.headline)
+            
+            if portfolioStocks.isEmpty {
+                Text("Add stocks to see predictions")
+                    .foregroundColor(.secondary)
+                    .padding(.vertical, 8)
+            } else {
+                HStack {
+                    Text("Projected Value (\(forecastPeriod.rawValue))")
+                    Spacer()
+                    Text("$\(calculateProjectedValue(), specifier: "%.2f")")
+                        .fontWeight(.bold)
+                        .foregroundColor(.blue)
+                }
+                
+                HStack {
+                    Text("Potential Gain")
+                    Spacer()
+                    let projectedGrowth = calculateProjectedGrowth()
+                    Text("+\(projectedGrowth, specifier: "$%.2f") (+\(calculateProjectedGrowthPercentage(), specifier: "%.2f")%)")
+                        .foregroundColor(.green)
+                }
+            }
+        }
+        .padding()
+        .background(Color.blue.opacity(0.05))
+        .cornerRadius(12)
+    }
+    
+    private func calculateProjectedValue() -> Double {
+        let currentValue = portfolioStocks.reduce(0) { $0 + $1.totalValue }
+        return currentValue + calculateProjectedGrowth()
+    }
+    
+    private func calculateProjectedGrowth() -> Double {
+        return portfolioStocks.reduce(0) { $0 + ($1.totalValue * $1.predictedChange(for: forecastPeriod) / 100) }
+    }
+    
+    private func calculateProjectedGrowthPercentage() -> Double {
+        let totalValue = portfolioStocks.reduce(0) { $0 + $1.totalValue }
+        return totalValue > 0 ? (calculateProjectedGrowth() / totalValue) * 100 : 0
+    }
+}
+
+// MARK: - Portfolio Stock Model
+extension PortfolioStock {
+    func predictedChange(for period: ForecastPeriod) -> Double {
+        switch period {
+        case .thirtyDays:
+            return predictedChange
+        case .sixMonths:
+            return predictedChange * 6 // 6 times the 30-day prediction
+        case .oneYear:
+            return predictedChange * 12 // 12 times the 30-day prediction
+        case .fiveYears:
+            return predictedChange * 60 // 60 times the 30-day prediction
+        }
+    }
+    
+    func projectedValue(for period: ForecastPeriod) -> Double {
+        let growthMultiplier = 1 + predictedChange(for: period) / 100
+        return totalValue * growthMultiplier
+    }
+}
+
 
 // MARK: - Portfolio Stock Model
 struct PortfolioStock: Identifiable {
@@ -213,118 +241,15 @@ struct PortfolioStock: Identifiable {
 }
 
 // MARK: - Portfolio Prediction Card
-struct PortfolioPredictionCard: View {
-    let portfolioStocks: [PortfolioStock]
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "brain.head.profile")
-                    .font(.title2)
-                    .foregroundColor(.blue)
-                
-                Text("AI Portfolio Prediction")
-                    .font(.headline)
-                
-                Spacer()
-                
-                Text("30-Day Forecast")
-                    .font(.caption)
-                    .padding(6)
-                    .background(Color.blue.opacity(0.1))
-                    .foregroundColor(.blue)
-                    .cornerRadius(8)
-            }
-            
-            Divider()
-            
-            // Prediction visualization
-            HStack(spacing: 0) {
-                ForEach(portfolioStocks.sorted { $0.predictedChange > $1.predictedChange }, id: \.id) { stock in
-                    VStack {
-                        ZStack(alignment: .bottom) {
-                            Rectangle()
-                                .fill(Color.gray.opacity(0.2))
-                                .frame(height: 100)
-                            
-                            Rectangle()
-                                .fill(predictionColor(for: stock.predictedChange))
-                                .frame(height: CGFloat(min(max(stock.predictedChange * 5, 10), 100)))
-                        }
-                        .frame(width: 30)
-                        .cornerRadius(4)
-                        
-                        Text(stock.symbol)
-                            .font(.caption2)
-                            .frame(width: 40)
-                    }
-                    
-                    if stock.id != portfolioStocks.sorted(by: { $0.predictedChange > $1.predictedChange }).last?.id {
-                        Spacer()
-                    }
-                }
-            }
-            .frame(height: 130)
-            .padding(.vertical, 4)
-            
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Current Value")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                    
-                    Text("$\(totalValue(), specifier: "%.2f")")
-                        .font(.subheadline)
-                        .fontWeight(.bold)
-                }
-                
-                Spacer()
-                
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text("Projected Value")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                    
-                    Text("$\(projectedValue(), specifier: "%.2f")")
-                        .font(.subheadline)
-                        .fontWeight(.bold)
-                        .foregroundColor(.blue)
-                }
-            }
-            
-            Text("Based on market trends and AI prediction models")
-                .font(.caption)
-                .foregroundColor(.gray)
-        }
-        .padding()
-        .background(Color.blue.opacity(0.05))
-        .cornerRadius(12)
-    }
-    
-    private func totalValue() -> Double {
-        return portfolioStocks.reduce(0) { $0 + $1.totalValue }
-    }
-    
-    private func projectedValue() -> Double {
-        return portfolioStocks.reduce(0) { $0 + $1.projectedValue }
-    }
-    
-    private func predictionColor(for change: Double) -> Color {
-        if change > 10 {
-            return .green
-        } else if change > 5 {
-            return .green.opacity(0.7)
-        } else if change > 0 {
-            return .green.opacity(0.4)
-        } else if change > -5 {
-            return .red.opacity(0.4)
-        } else if change > -10 {
-            return .red.opacity(0.7)
-        } else {
-            return .red
-        }
-    }
-}
+//private func calculateProjectedGrowth() -> Double {
+//    return portfolioStocks.reduce(0) { $0 + ($1.totalValue * $1.predictedChange(for: forecastPeriod) / 100) }
+//}
+//
+//private func calculateProjectedGrowthPercentage() -> Double {
+//    let totalValue = CalculateTotalValue()
+//    return totalValue > 0 ? (calculateProjectedGrowth() / totalValue) * 100 : 0
+//}
+
 
 // MARK: - Twelve Data API Models
 struct TwelveDataSymbol: Identifiable, Codable {
