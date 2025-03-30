@@ -7,82 +7,104 @@ struct HomeView: View {
     @State private var showingInvalidStockAlert = false
     @State private var newStockInput = ""
     @State private var stockToDelete: Stock? = nil
+    @State private var showChat = false
+    @State private var navigateToPortfolio = false
 
     let defaultSymbols = ["COF", "ITC.NS"]
 
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: 16) {
-                    // Market Overview Card
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Market Snapshot")
-                            .font(.headline)
-                            .padding(.horizontal)
-
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 12) {
-                                MarketIndexCard(name: "S&P 500", value: "5,245.62", change: "+0.52%", isPositive: true)
-                                MarketIndexCard(name: "NASDAQ", value: "16,384.47", change: "+0.65%", isPositive: true)
-                                MarketIndexCard(name: "DOW", value: "39,127.14", change: "-0.18%", isPositive: false)
-                            }
-                            .padding(.horizontal)
-                        }
-                    }
-
-                    Divider()
-
-                    // Featured Stocks
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack {
-                            Text("Featured Stocks")
+        NavigationStack {
+            ZStack {
+                ScrollView {
+                    VStack(spacing: 16) {
+                        
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Today's Market")
                                 .font(.headline)
-                            Spacer()
-                            Button(action: {
-                                showingAddStockPrompt = true
-                            }) {
-                                Image(systemName: "plus.circle.fill")
-                                    .font(.title2)
-                                    .foregroundColor(.blue)
+                                .padding(.horizontal)
+                            
+
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    MarketIndexCard(name: "S&P 500", value: "5,245.62", change: "+0.52%", isPositive: true)
+                                    MarketIndexCard(name: "NASDAQ", value: "16,384.47", change: "+0.65%", isPositive: true)
+                                    MarketIndexCard(name: "DOW", value: "39,127.14", change: "-0.18%", isPositive: false)
+                                }
+                                .padding(.horizontal)
                             }
                         }
-                        .padding(.horizontal)
 
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 12) {
-                                ForEach(defaultStocks) { stock in
-                                    MinimalStockCard(stock: stock)
-                                }
+                        Divider()
 
-                                ForEach(customStocks) { stock in
-                                    MinimalStockCard(stock: stock)
-                                        .contentShape(Rectangle())
-                                        .onLongPressGesture {
-                                            self.stockToDelete = stock
-                                        }
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                Text("Featured Stocks")
+                                    .font(.headline)
+                                Spacer()
+                                Button(action: {
+                                    showingAddStockPrompt = true
+                                }) {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.title2)
+                                        .foregroundColor(.blue)
                                 }
+                            }
+                            .padding(.horizontal)
+
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    ForEach(defaultStocks) { stock in
+                                        MinimalStockCard(stock: stock)
+                                    }
+
+                                    ForEach(customStocks) { stock in
+                                        MinimalStockCard(stock: stock)
+                                            .contentShape(Rectangle())
+                                            .onLongPressGesture {
+                                                self.stockToDelete = stock
+                                            }
+                                    }
+                                }
+                                .padding(.horizontal)
+                            }
+                        }
+
+                        Divider()
+
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Recent Predictions")
+                                .font(.headline)
+                                .padding(.horizontal)
+
+                            VStack(spacing: 12) {
+                                PredictionCard(stockSymbol: "AAPL", stockName: "Apple Inc.", predictionText: "Bullish trend expected over next 30 days", confidence: 0.85)
+                                PredictionCard(stockSymbol: "MSFT", stockName: "Microsoft Corp.", predictionText: "Moderate growth with potential volatility", confidence: 0.72)
+                                PredictionCard(stockSymbol: "TSLA", stockName: "Tesla Inc.", predictionText: "Potential correction in short-term", confidence: 0.68)
                             }
                             .padding(.horizontal)
                         }
                     }
+                    .padding(.vertical)
+                }
 
-                    Divider()
-
-                    // Recent Predictions
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Recent Predictions")
-                            .font(.headline)
-                            .padding(.horizontal)
-
-                        VStack(spacing: 12) {
-                            PredictionCard(stockSymbol: "AAPL", stockName: "Apple Inc.", predictionText: "Bullish trend expected over next 30 days", confidence: 0.85)
-                            PredictionCard(stockSymbol: "MSFT", stockName: "Microsoft Corp.", predictionText: "Moderate growth with potential volatility", confidence: 0.72)
-                            PredictionCard(stockSymbol: "TSLA", stockName: "Tesla Inc.", predictionText: "Potential correction in short-term", confidence: 0.68)
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        NavigationLink(destination: ChatView()
+                            .transition(.move(edge: .trailing))
+                            .animation(.easeInOut(duration: 0.4), value: showChat)
+                    ) {
+                            Image(systemName: "message.fill")
+                                .foregroundColor(.white)
+                                .padding()
+                                .background(Color.purple)
+                                .clipShape(Circle())
+                                .shadow(radius: 4)
                         }
-                        .padding(.horizontal)
+                        .padding()
                     }
                 }
-                .padding(.vertical)
             }
             .navigationTitle("Market Overview")
             .onAppear {
@@ -218,4 +240,3 @@ struct MinimalStockCard: View {
         .cornerRadius(12)
     }
 }
-

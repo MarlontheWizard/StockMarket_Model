@@ -9,136 +9,154 @@ struct PortfolioView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                // Action buttons in header
-                HStack {
-                    Spacer()
-                    
-                    Button(action: {
-                        showRemoveStockSheet = true
-                    }) {
-                        HStack {
-                            Image(systemName: "minus")
-                            Text("Remove Stock")
-                        }
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 16)
-                        .background(Color.red.opacity(0.1))
-                        .foregroundColor(.red)
-                        .cornerRadius(8)
-                    }
-                    .padding(.horizontal, 4)
-                    .disabled(portfolioStocks.isEmpty)
-                    
-                    Button(action: {
-                        showAddStockSheet = true
-                    }) {
-                        HStack {
-                            Image(systemName: "plus")
-                            Text("Add Stock")
-                        }
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 16)
-                        .background(Color.blue.opacity(0.1))
-                        .foregroundColor(.blue)
-                        .cornerRadius(8)
-                    }
-                    .padding(.horizontal, 4)
-                }
-                .padding(.horizontal)
-                .padding(.vertical, 8)
-                
-                List {
-                    // Portfolio Prediction Card
-                    Section {
-                        PortfolioPredictionCard(portfolioStocks: portfolioStocks)
-                    }
-                    
-                    Section(header: Text("Portfolio Summary")) {
-                        HStack {
-                            Text("Total Value")
-                            Spacer()
-                            Text("$\(calculateTotalValue(), specifier: "%.2f")")
-                                .fontWeight(.bold)
-                        }
-                        .padding(.vertical, 4)
+            ZStack { // Wrap everything in a ZStack
+                VStack(spacing: 0) {
+                    HStack {
+                        Spacer()
                         
-                        HStack {
-                            Text("Today's Change")
-                            Spacer()
-                            let dailyChange = calculateDailyChange()
-                            Text("\(dailyChange > 0 ? "+" : "")\(dailyChange, specifier: "$%.2f") (\(calculateDailyChangePercentage(), specifier: "%.2f")%)")
-                                .foregroundColor(dailyChange >= 0 ? .green : .red)
+                        Button(action: {
+                            showRemoveStockSheet = true
+                        }) {
+                            HStack {
+                                Image(systemName: "minus")
+                                Text("Remove Stock")
+                            }
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 16)
+                            .background(Color.red.opacity(0.1))
+                            .foregroundColor(.red)
+                            .cornerRadius(8)
                         }
-                        .padding(.vertical, 4)
+                        .padding(.horizontal, 4)
+                        .disabled(portfolioStocks.isEmpty)
                         
-                        HStack {
-                            Text("Cash Available")
-                            Spacer()
-                            Text("$\(cashAvailable, specifier: "%.2f")")
+                        Button(action: {
+                            showAddStockSheet = true
+                        }) {
+                            HStack {
+                                Image(systemName: "plus")
+                                Text("Add Stock")
+                            }
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 16)
+                            .background(Color.blue.opacity(0.1))
+                            .foregroundColor(.blue)
+                            .cornerRadius(8)
                         }
-                        .padding(.vertical, 4)
-                        
-                        HStack {
-                            Text("Projected Growth (30d)")
-                            Spacer()
-                            let projectedGrowth = calculateProjectedGrowth()
-                            Text("+\(projectedGrowth, specifier: "$%.2f") (+\(calculateProjectedGrowthPercentage(), specifier: "%.2f")%)")
-                                .foregroundColor(.blue)
-                        }
-                        .padding(.vertical, 4)
+                        .padding(.horizontal, 4)
                     }
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
                     
-                    Section(header: Text("Your Holdings")) {
-                        ForEach(portfolioStocks.indices, id: \.self) { index in
-                            NavigationLink(destination: StockDetailView(stock: portfolioStocks[index])) {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    HStack {
-                                        Text(portfolioStocks[index].symbol)
-                                            .font(.headline)
-                                        
-                                        Text(portfolioStocks[index].name)
-                                            .font(.caption)
-                                            .foregroundColor(.gray)
-                                        
-                                        Spacer()
-                                        
-                                        VStack(alignment: .trailing) {
-                                            Text("$\(portfolioStocks[index].currentPrice, specifier: "%.2f")")
-                                                .font(.subheadline)
+                    List {
+                        // Portfolio Prediction Card
+                        Section {
+                            PortfolioPredictionCard(portfolioStocks: portfolioStocks)
+                        }
+                        
+                        Section(header: Text("Portfolio Summary")) {
+                            HStack {
+                                Text("Total Value")
+                                Spacer()
+                                Text("$\(calculateTotalValue(), specifier: "%.2f")")
+                                    .fontWeight(.bold)
+                            }
+                            .padding(.vertical, 4)
+                            
+                            HStack {
+                                Text("Today's Change")
+                                Spacer()
+                                let dailyChange = calculateDailyChange()
+                                Text("\(dailyChange > 0 ? "+" : "")\(dailyChange, specifier: "$%.2f") (\(calculateDailyChangePercentage(), specifier: "%.2f")%)")
+                                    .foregroundColor(dailyChange >= 0 ? .green : .red)
+                            }
+                            .padding(.vertical, 4)
+                            
+                            HStack {
+                                Text("Cash Available")
+                                Spacer()
+                                Text("$\(cashAvailable, specifier: "%.2f")")
+                            }
+                            .padding(.vertical, 4)
+                            
+                            HStack {
+                                Text("Projected Growth (30d)")
+                                Spacer()
+                                let projectedGrowth = calculateProjectedGrowth()
+                                Text("+\(projectedGrowth, specifier: "$%.2f") (+\(calculateProjectedGrowthPercentage(), specifier: "%.2f")%)")
+                                    .foregroundColor(.blue)
+                            }
+                            .padding(.vertical, 4)
+                        }
+                        
+                        Section(header: Text("Your Holdings")) {
+                            ForEach(portfolioStocks.indices, id: \.self) { index in
+                                NavigationLink(destination: StockDetailView(stock: portfolioStocks[index])) {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        HStack {
+                                            Text(portfolioStocks[index].symbol)
+                                                .font(.headline)
                                             
-                                            Text("\(portfolioStocks[index].dailyChange > 0 ? "+" : "")\(portfolioStocks[index].dailyChange, specifier: "%.2f")%")
+                                            Text(portfolioStocks[index].name)
                                                 .font(.caption)
-                                                .foregroundColor(portfolioStocks[index].dailyChange >= 0 ? .green : .red)
+                                                .foregroundColor(.gray)
+                                            
+                                            Spacer()
+                                            
+                                            VStack(alignment: .trailing) {
+                                                Text("$\(portfolioStocks[index].currentPrice, specifier: "%.2f")")
+                                                    .font(.subheadline)
+                                                
+                                                Text("\(portfolioStocks[index].dailyChange > 0 ? "+" : "")\(portfolioStocks[index].dailyChange, specifier: "%.2f")%")
+                                                    .font(.caption)
+                                                    .foregroundColor(portfolioStocks[index].dailyChange >= 0 ? .green : .red)
+                                            }
+                                        }
+                                        
+                                        HStack {
+                                            Text("\(portfolioStocks[index].shares) shares")
+                                                .font(.footnote)
+                                                .foregroundColor(.gray)
+                                            
+                                            Spacer()
+                                            
+                                            Text("$\(portfolioStocks[index].totalValue, specifier: "%.2f")")
+                                                .font(.footnote)
+                                                .fontWeight(.semibold)
+                                        }
+                                        
+                                        // Prediction indicator
+                                        HStack {
+                                            Image(systemName: "chart.line.uptrend.xyaxis")
+                                                .foregroundColor(.blue)
+                                                .font(.caption)
+                                            
+                                            Text("Predicted: \(portfolioStocks[index].predictedChange > 0 ? "+" : "")\(portfolioStocks[index].predictedChange, specifier: "%.1f")% (30d)")
+                                                .font(.caption)
+                                                .foregroundColor(.blue)
                                         }
                                     }
-                                    
-                                    HStack {
-                                        Text("\(portfolioStocks[index].shares) shares")
-                                            .font(.footnote)
-                                            .foregroundColor(.gray)
-                                        
-                                        Spacer()
-                                        
-                                        Text("$\(portfolioStocks[index].totalValue, specifier: "%.2f")")
-                                            .font(.footnote)
-                                            .fontWeight(.semibold)
-                                    }
-                                    
-                                    // Prediction indicator
-                                    HStack {
-                                        Image(systemName: "chart.line.uptrend.xyaxis")
-                                            .foregroundColor(.blue)
-                                            .font(.caption)
-                                        
-                                        Text("Predicted: \(portfolioStocks[index].predictedChange > 0 ? "+" : "")\(portfolioStocks[index].predictedChange, specifier: "%.1f")% (30d)")
-                                            .font(.caption)
-                                            .foregroundColor(.blue)
-                                    }
+                                    .padding(.vertical, 4)
                                 }
-                                .padding(.vertical, 4)
                             }
                         }
+                    }
+                }
+                
+                // ✅ Floating Chat Button
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        NavigationLink(destination: ChatView()) {
+                            Image(systemName: "message.fill")
+                                .foregroundColor(.white)
+                                .padding()
+                                .background(Color.purple)
+                                .clipShape(Circle())
+                                .shadow(radius: 4)
+                        }
+                        .padding()
                     }
                 }
             }
@@ -151,6 +169,7 @@ struct PortfolioView: View {
             }
         }
     }
+
     private func calculateTotalValue() -> Double {
         return portfolioStocks.reduce(0) { $0 + $1.totalValue }
     }

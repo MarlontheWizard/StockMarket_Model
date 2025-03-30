@@ -1,5 +1,6 @@
 import SwiftUI
 
+
 struct MainTabView: View {
     @Binding var isAuthenticated: Bool
 
@@ -8,11 +9,6 @@ struct MainTabView: View {
             HomeView()
                 .tabItem {
                     Label("Home", systemImage: "house")
-                }
-
-            ChatView()
-                .tabItem {
-                    Label("AI Chat", systemImage: "message.fill")
                 }
 
             PortfolioView()
