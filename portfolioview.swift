@@ -392,7 +392,7 @@ struct StockPriceResponse: Decodable {
 
 // MARK: - API Service
 class TwelveDataService: ObservableObject {
-    private let apiKey = "ba8a9a72e3114293af6a80c4b75390d4"
+    private let apiKey = "cf72cc9869b647acbe52160a2ebd9721"
     @Published var symbols: [TwelveDataSymbol] = []
     @Published var isLoading = false
     @Published var errorMessage = ""
