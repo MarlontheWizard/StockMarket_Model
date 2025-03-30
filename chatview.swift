@@ -123,4 +123,3 @@ struct ChatMessage: Identifiable {
     let isUser: Bool
     let timestamp = Date()
 }
-

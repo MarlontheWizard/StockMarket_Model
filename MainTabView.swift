@@ -24,4 +24,3 @@ struct MainTabView: View {
         .accentColor(.blue)
     }
 }
-

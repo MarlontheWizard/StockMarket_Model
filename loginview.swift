@@ -1,5 +1,4 @@
 import SwiftUI
-import AuthenticationServices
 import UIKit
 
 struct LoginView: View {
@@ -73,24 +72,6 @@ struct LoginView: View {
                                 .foregroundColor(.white)
                                 .font(.subheadline)
                         }
-                        
-                        // Divider with "or" text
-                        HStack {
-                            VStack { Divider().background(Color.white.opacity(0.5)) }
-                            Text("OR").foregroundColor(.white.opacity(0.8)).padding(.horizontal, 8)
-                            VStack { Divider().background(Color.white.opacity(0.5)) }
-                        }.padding(.vertical)
-                        
-                        // Apple Sign-In Button
-                        SignInWithAppleButton(
-                            .signIn,
-                            onRequest: configureAppleSignIn,
-                            onCompletion: handleAppleSignInResult
-                        )
-                        .signInWithAppleButtonStyle(.white)
-                        .frame(height: 50)
-                        .cornerRadius(8)
-                        .padding(.bottom)
                     }
                     .padding(.horizontal, 32)
                     
@@ -115,46 +96,6 @@ struct LoginView: View {
             }
         } else {
             alertMessage = "Invalid email or password. Please try again."
-            showingAlert = true
-        }
-    }
-    
-    func configureAppleSignIn(_ request: ASAuthorizationAppleIDRequest) {
-        request.requestedScopes = [.fullName, .email]
-    }
-    
-    func handleAppleSignInResult(_ result: Result<ASAuthorization, Error>) {
-        switch result {
-        case .success(let authorization):
-            if let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential {
-                // Extract user details
-                let userId = appleIDCredential.user
-                let email = appleIDCredential.email
-                let fullName = appleIDCredential.fullName
-                
-                // Process user information
-                if let email = email {
-                    userEmail = email
-                } else {
-                    // Apple might not provide email on subsequent logins
-                    userEmail = "\(userId)@apple.signin"
-                }
-                
-                if let givenName = fullName?.givenName, let familyName = fullName?.familyName {
-                    userName = "\(givenName) \(familyName)"
-                } else {
-                    // Extract a name from email or use a default
-                    let emailPrefix = userEmail.components(separatedBy: "@").first ?? "User"
-                    userName = emailPrefix
-                }
-                
-                // Set authentication state
-                isUserLoggedIn = true
-                isAuthenticated = true
-            }
-            
-        case .failure(let error):
-            alertMessage = "Sign in failed: \(error.localizedDescription)"
             showingAlert = true
         }
     }
