@@ -433,6 +433,50 @@ struct AddStockView: View {
     @State private var isLoadingPrice = false
     @State private var errorMessage = ""
     
+    func fetchStockPrice(for symbol: String) {
+        isLoadingPrice = true
+        errorMessage = ""
+        
+        apiService.fetchSymbols() // First fetch available symbols
+        
+        // Find the symbol in the list of available symbols
+        if let stock = apiService.symbols.first(where: { $0.symbol == symbol }) {
+            selectedStock = stock
+            
+            // Then fetch the price for that symbol
+            apiService.fetchStockPrice(symbol: symbol) { result in
+                switch result {
+                case .success(let price):
+                    self.stockPrice = price
+                    self.isLoadingPrice = false
+                case .failure(let error):
+                    self.errorMessage = "Error getting price: \(error.localizedDescription)"
+                    self.isLoadingPrice = false
+                }
+            }
+        } else {
+            // If the symbol search doesn't yield results immediately, fetch directly
+            apiService.fetchStockPrice(symbol: symbol) { result in
+                switch result {
+                case .success(let price):
+                    // Create a basic stock info since we don't have full details
+                    self.selectedStock = TwelveDataSymbol(
+                        symbol: symbol,
+                        name: symbol, // Use symbol as name temporarily
+                        currency: "USD",
+                        exchange: "Unknown",
+                        country: "Unknown",
+                        type: "Stock"
+                    )
+                    self.stockPrice = price
+                    self.isLoadingPrice = false
+                case .failure(let error):
+                    self.errorMessage = "Error: Could not find stock or get price. \(error.localizedDescription)"
+                    self.isLoadingPrice = false
+                }
+            }
+        }
+    }
     
     var body: some View {
         NavigationView {
@@ -553,7 +597,30 @@ struct AddStockView: View {
                                 let totalCost = Double(sharesInt) * stockPrice
                                 
                                 if totalCost <= cashAvailable {
-                                    AddStockView(symbol: selectedStock.symbol, name: selectedStock.name, price: stockPrice, shares: sharesInt)
+                                    Button(action: {
+                                        if let sharesInt = Int(shares), sharesInt > 0 {
+                                            let totalCost = Double(sharesInt) * stockPrice
+                                            
+                                            if totalCost <= cashAvailable {
+                                                // Create a new PortfolioStock and add it to the array
+                                                let newStock = PortfolioStock(
+                                                    symbol: selectedStock.symbol,
+                                                    name: selectedStock.name,
+                                                    currentPrice: stockPrice,
+                                                    shares: sharesInt,
+                                                    dailyChange: 0.0, // Default value, you might want to fetch this
+                                                    predictedChange: 5.0 // Default value, you might want to set this differently
+                                                )
+                                                portfolioStocks.append(newStock)
+                                                cashAvailable -= totalCost
+                                                presentationMode.wrappedValue.dismiss()
+                                            } else {
+                                                showInsufficientFundsAlert = true
+                                            }
+                                        }
+                                    }) {
+                                        // Button appearance code...
+                                    }
                                     cashAvailable -= totalCost
                                     presentationMode.wrappedValue.dismiss()
                                 } else {
@@ -1081,4 +1148,5 @@ struct StockDetailView: View {
         }
     }
 }
+
 
