@@ -6,6 +6,7 @@ struct ChatView: View {
         ChatMessage(text: "Hello! I'm your AI stock assistant powered by Google's Gemini. How can I help you analyze or predict stock movements today?", isUser: false)
     ]
     @State private var isLoading = false
+    private let geminiService = GeminiService()
 
     var body: some View {
         NavigationView {
@@ -70,18 +71,16 @@ struct ChatView: View {
         message = ""
         isLoading = true
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            let responseText: String
-
-            if userQuery.lowercased().contains("apple") || userQuery.lowercased().contains("aapl") {
-                responseText = "• Apple (AAPL) is showing bullish signals\n• Recent product launches should boost revenue\n• Technical indicators suggest upward momentum\n• Price target: $195-205 range in next quarter\n• Confidence: 80%"
-            } else if userQuery.lowercased().contains("tesla") || userQuery.lowercased().contains("tsla") {
-                responseText = "• Tesla (TSLA) facing headwinds in EV market\n• Production numbers below expectations\n• Competition intensifying globally\n• Outlook: Neutral to slightly bearish\n• Confidence: 65%"
-            } else {
-                responseText = "• I can provide stock analysis and predictions\n• Please specify a company or stock symbol\n• Try asking about AAPL, MSFT, GOOGL, etc."
+        Task {
+            do {
+                let geminiResponse = try await geminiService.generateResponse(prompt: userQuery)
+                let aiMessage = ChatMessage(text: geminiResponse, isUser: false)
+                messages.append(aiMessage)
+            } catch {
+                let errorMessage = ChatMessage(text: "Error: \(error.localizedDescription)", isUser: false)
+                messages.append(errorMessage)
             }
 
-            messages.append(ChatMessage(text: responseText, isUser: false))
             isLoading = false
         }
     }
@@ -98,7 +97,7 @@ struct ChatBubble: View {
                 Text(message.text)
                     .padding(12)
                     .background(message.isUser ? Color.blue : Color.white.opacity(0.2))
-                    .foregroundColor(message.isUser ? .white : .white)
+                    .foregroundColor(.white)
                     .cornerRadius(16)
 
                 Text(timeString)
@@ -123,3 +122,4 @@ struct ChatMessage: Identifiable {
     let isUser: Bool
     let timestamp = Date()
 }
+

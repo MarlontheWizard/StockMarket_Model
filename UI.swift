@@ -81,24 +81,34 @@ struct MarketIndexCard: View {
     let value: String
     let change: String
     let isPositive: Bool
-    
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(spacing: 5) {
             Text(name)
-                .font(.caption)
-                .foregroundColor(.gray)
-            
-            Text(value)
                 .font(.subheadline)
-                .fontWeight(.semibold)
-            
+                .foregroundColor(.white)
+
+            Text(value)
+                .font(.headline)
+                .foregroundColor(.white)
+
             Text(change)
                 .font(.caption)
-                .foregroundColor(isPositive ? .green : .red)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(isPositive ? Color.green : Color.red)
+                .foregroundColor(.white)
+                .cornerRadius(6)
         }
-        .padding()
+        .padding(10)
+        .background(Color.black.opacity(0.2))
+        .cornerRadius(14)
+        .frame(width: 120) // 👈 Add this!
     }
 }
+
+
+
 
 // MARK: - Enhanced Home View (removed reference to MainTabView)
 struct EnhancedHomeView: View {

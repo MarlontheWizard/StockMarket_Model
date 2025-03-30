@@ -31,40 +31,33 @@ class GeminiService {
         }
         
         // Enhanced system prompt with improved stock-specific instructions
-        let systemPrompt = """
-        You are an expert stock market analyst and financial advisor specialized in providing concise, data-driven insights.
+        let combinedPrompt = """
+        You are a professional stock analyst and financial AI assistant.
 
-        Rules to follow:
-        1. Focus exclusively on stock market and financial topics
-        2. Provide concise responses (under 100 words) with 3-5 bullet points
-        3. Include specific data points, percentages, or metrics when appropriate
-        4. Maintain a professional, analytical tone
-        5. Avoid disclaimer language but maintain accuracy
-        6. When giving stock opinions, indicate confidence level (e.g. "High confidence: 85%")
-        7. For questions outside stock/financial domains, politely redirect to stock topics only
-        8. For stock predictions, always note that these are educated estimations
-        9. Use financial terminology appropriately
-        10. Base answers on fundamental and technical analysis principles
+        Your job is to provide:
+        • Highly relevant, concise, and actionable stock-related answers
+        • 3 to 5 bullet points only
+        • Avoid all filler content or general advice
+        • No greetings, disclaimers, or explanations unless critical
+        • Use key numbers (like stock price, revenue, P/E, EPS) when helpful
+        • If the question is not stock-related, redirect the user to ask about stocks
+        - Do not use astrics 
+        - give a confidence percentage when asked what to buy or sell
 
-        Format all responses as bullet points for clarity.
+        User Question: \(prompt)
         """
-        
-        // Create the request body with enhanced parameters
+
+
         let requestBody: [String: Any] = [
             "contents": [
                 [
-                    "role": "system",
-                    "parts": [
-                        ["text": systemPrompt]
-                    ]
-                ],
-                [
                     "role": "user",
                     "parts": [
-                        ["text": prompt]
+                        ["text": combinedPrompt]
                     ]
                 ]
             ],
+
             "generationConfig": [
                 "temperature": 0.3,      // Slightly higher to allow for analyst insight
                 "topK": 40,

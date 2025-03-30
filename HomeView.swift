@@ -3,6 +3,8 @@ import SwiftUI
 struct HomeView: View {
     @State private var customStocks: [Stock] = []
     @State private var defaultStocks: [Stock] = []
+    @State private var marketStocks: [Stock] = []
+    
     @State private var showingAddStockPrompt = false
     @State private var showingInvalidStockAlert = false
     @State private var newStockInput = ""
@@ -11,6 +13,7 @@ struct HomeView: View {
     @State private var navigateToPortfolio = false
 
     let defaultSymbols = ["COF", "ITC.NS"]
+    let marketSymbols = ["TSLA", "PFE", "NVDA"]
 
     var body: some View {
         NavigationStack {
@@ -18,17 +21,22 @@ struct HomeView: View {
                 ScrollView {
                     VStack(spacing: 16) {
                         
+                        // TODAY'S MARKET
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Today's Market")
                                 .font(.headline)
                                 .padding(.horizontal)
-                            
 
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 12) {
-                                    MarketIndexCard(name: "S&P 500", value: "5,245.62", change: "+0.52%", isPositive: true)
-                                    MarketIndexCard(name: "NASDAQ", value: "16,384.47", change: "+0.65%", isPositive: true)
-                                    MarketIndexCard(name: "DOW", value: "39,127.14", change: "-0.18%", isPositive: false)
+                                    ForEach(marketStocks) { stock in
+                                        MarketIndexCard(
+                                            name: stock.symbol,
+                                            value: stock.price,
+                                            change: stock.change + "%",
+                                            isPositive: stock.isPositive
+                                        )
+                                    }
                                 }
                                 .padding(.horizontal)
                             }
@@ -36,6 +44,7 @@ struct HomeView: View {
 
                         Divider()
 
+                        // FEATURED STOCKS
                         VStack(alignment: .leading, spacing: 10) {
                             HStack {
                                 Text("Featured Stocks")
@@ -71,6 +80,7 @@ struct HomeView: View {
 
                         Divider()
 
+                        // RECENT PREDICTIONS
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Recent Predictions")
                                 .font(.headline)
@@ -87,6 +97,7 @@ struct HomeView: View {
                     .padding(.vertical)
                 }
 
+                // Chat Button
                 VStack {
                     Spacer()
                     HStack {
@@ -94,7 +105,7 @@ struct HomeView: View {
                         NavigationLink(destination: ChatView()
                             .transition(.move(edge: .trailing))
                             .animation(.easeInOut(duration: 0.4), value: showChat)
-                    ) {
+                        ) {
                             Image(systemName: "message.fill")
                                 .foregroundColor(.white)
                                 .padding()
@@ -109,6 +120,7 @@ struct HomeView: View {
             .navigationTitle("Market Overview")
             .onAppear {
                 loadDefaultStocks()
+                loadMarketStocks()
             }
         }
         .alert("Add Stock", isPresented: $showingAddStockPrompt, actions: {
@@ -170,6 +182,19 @@ struct HomeView: View {
         }
     }
 
+    func loadMarketStocks() {
+        marketStocks.removeAll()
+        for symbol in marketSymbols {
+            fetchStockInfo(for: symbol) { result in
+                DispatchQueue.main.async {
+                    if let stock = result {
+                        marketStocks.append(stock)
+                    }
+                }
+            }
+        }
+    }
+
     func fetchStockInfo(for symbol: String, completion: @escaping (Stock?) -> Void) {
         let apiKey = "ba8a9a72e3114293af6a80c4b75390d4"
         let urlString = "https://api.twelvedata.com/quote?symbol=\(symbol)&apikey=\(apiKey)"
@@ -202,6 +227,8 @@ struct HomeView: View {
         }.resume()
     }
 }
+
+// MARK: - Supporting Views and Models
 
 struct Stock: Identifiable {
     let id = UUID()
@@ -240,3 +267,4 @@ struct MinimalStockCard: View {
         .cornerRadius(12)
     }
 }
+
