@@ -65,7 +65,8 @@ struct PortfolioView: View {
                         HStack {
                             Text("Total Value")
                             Spacer()
-                            Text("$\(calculateTotalValue() + calculateProjectedGrowth(), specifier: "%.2f")")
+                            let projectedGrowth = calculateProjectedGrowth()
+                            Text("$\(100000 + projectedGrowth, specifier: "%.2f")")
                                 .fontWeight(.bold)
                         }
                         .padding(.vertical, 4)
@@ -227,7 +228,7 @@ struct PortfolioPredictionCard: View {
                     Text("Potential Gain")
                     Spacer()
                     let projectedGrowth = calculateProjectedGrowth()
-                    Text("+\(projectedGrowth, specifier: "$%.2f") (+\(calculateProjectedGrowthPercentage(), specifier: "%.2f")%)")
+                    Text("+\(projectedGrowth, specifier: "$%.2f") (+\(projectedGrowth/calculateProjectedValue(), specifier: "%.2f")%)")
                         .foregroundColor(.green)
                 }
             }
@@ -238,18 +239,18 @@ struct PortfolioPredictionCard: View {
     }
     
     private func calculateProjectedValue() -> Double {
-        let currentValue = portfolioStocks.reduce(0) { $0 + $1.totalValue }
-        return currentValue + calculateProjectedGrowth()
-    }
-    
-    private func calculateProjectedGrowth() -> Double {
-        return portfolioStocks.reduce(0) { $0 + ($1.totalValue * $1.predictedChange(for: forecastPeriod) / 100) }
-    }
-    
-    private func calculateProjectedGrowthPercentage() -> Double {
-        let totalValue = portfolioStocks.reduce(0) { $0 + $1.totalValue }
-        return totalValue > 0 ? (calculateProjectedGrowth() / totalValue) * 100 : 0
-    }
+            let currentValue = portfolioStocks.reduce(0) { $0 + $1.totalValue }
+            return currentValue + calculateProjectedGrowth()
+        }
+        
+        private func calculateProjectedGrowth() -> Double {
+            return portfolioStocks.reduce(0) { $0 + ($1.totalValue * $1.predictedChange(for: forecastPeriod) / 100) }
+        }
+        
+        private func calculateProjectedGrowthPercentage() -> Double {
+            let totalValue = portfolioStocks.reduce(0) { $0 + $1.totalValue }
+            return totalValue > 0 ? (calculateProjectedGrowth() / totalValue) * 100 : 0
+        }
 }
 
 // MARK: - Portfolio Stock Model
@@ -284,13 +285,65 @@ struct PortfolioStock: Identifiable {
     let dailyChange: Double
     let predictedChange: Double
     
-    var totalValue: Double {
-        return currentPrice * Double(shares)
-    }
-    
-    var projectedValue: Double {
-        return totalValue * (1 + predictedChange/100)
-    }
+    func predictedChange1(for period: ForecastPeriod) -> Double {
+            switch symbol {
+            case "AAPL":
+                switch period {
+                case .thirtyDays:
+                    return 3.5 // Example: +3.5% in 30 days
+                case .sixMonths:
+                    return 12.0 // Example: +12% in 6 months
+                case .oneYear:
+                    return 25.0 // Example: +25% in 1 year
+                case .fiveYears:
+                    return 120.0 // Example: +120% in 5 years
+                }
+            case "AMZN":
+                switch period {
+                case .thirtyDays:
+                    return 2.8
+                case .sixMonths:
+                    return 10.0
+                case .oneYear:
+                    return 22.0
+                case .fiveYears:
+                    return 110.0
+                }
+            case "TSLA":
+                switch period {
+                case .thirtyDays:
+                    return 5.0
+                case .sixMonths:
+                    return 18.0
+                case .oneYear:
+                    return 40.0
+                case .fiveYears:
+                    return 200.0
+                }
+            case "MSFT":
+                switch period {
+                case .thirtyDays:
+                    return 3.0
+                case .sixMonths:
+                    return 11.0
+                case .oneYear:
+                    return 24.0
+                case .fiveYears:
+                    return 115.0
+                }
+            default:
+                return predictedChange // Default value for other stocks
+            }
+        }
+        
+        var totalValue: Double {
+            return currentPrice * Double(shares)
+        }
+        
+        var projectedValue: Double {
+            let growthMultiplier = 1 + predictedChange(for: ForecastPeriod.thirtyDays) / 100 // Default to 30 days for calculation
+            return totalValue * growthMultiplier
+        }
 }
 
 // MARK: - Portfolio Prediction Card
@@ -608,6 +661,18 @@ struct AddStockView: View {
             )
         }
     }
+    private func addHardcodedStock(symbol: String, name: String, price: Double, shares: Int) {
+            let newStock = PortfolioStock(
+                symbol: symbol,
+                name: name,
+                currentPrice: price,
+                shares: shares,
+                dailyChange: 0,
+                predictedChange: 0 // Default change; overridden by hardcoded logic in PortfolioStock model.
+            )
+            portfolioStocks.append(newStock)
+            cashAvailable -= price * Double(shares)
+        }
 }
 
 // Updated RemoveStockView to properly handle stock removal
