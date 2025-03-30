@@ -1,29 +1,5 @@
+// UI.swift
 import SwiftUI
-
-// MARK: - MarketIndexCard
-struct MarketIndexCard: View {
-    let name: String
-    let value: String
-    let change: String
-    let isPositive: Bool
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(name)
-                .font(.caption)
-                .foregroundColor(.gray)
-            
-            Text(value)
-                .font(.subheadline)
-                .fontWeight(.semibold)
-            
-            Text(change)
-                .font(.caption)
-                .foregroundColor(isPositive ? .green : .red)
-        }
-        .padding()
-    }
-}
 
 // MARK: - App Logo View
 struct LogoView: View {
@@ -59,32 +35,7 @@ struct LogoView: View {
     }
 }
 
-// MARK: - Enhanced Content View with Logo
-struct EnhancedContentView: View {
-    @State private var isLogoAnimated = false
-    @State private var isAuthenticated = false // Added state for authentication
-    
-    var body: some View {
-        VStack {
-            // Animated logo appears on app launch
-            if !isLogoAnimated {
-                LogoView()
-                    .scaleEffect(isLogoAnimated ? 1.0 : 0.8)
-                    .opacity(isLogoAnimated ? 0 : 1)
-                    .onAppear {
-                        withAnimation(.easeInOut(duration: 2.0)) {
-                            isLogoAnimated = true
-                        }
-                    }
-            } else {
-                // Main app UI - Using binding for isAuthenticated
-                MainTabView(isAuthenticated: $isAuthenticated)
-            }
-        }
-    }
-}
-
-// MARK: - Enhanced App Styling
+// MARK: - Enhanced Theme
 struct EnhancedTheme {
     // App Colors
     static let primary = Color.blue
@@ -124,18 +75,32 @@ struct EnhancedCardView<Content: View>: View {
     }
 }
 
-// MARK: - Modified StockAnalyzerApp
-// Use this to replace your existing app struct
-struct StockAnalyzerApp: App {
-    var body: some Scene {
-        WindowGroup {
-            ContentView() // Use existing ContentView as main entry point
+// MARK: - Market Index Card (moved from duplicate declaration)
+struct MarketIndexCard: View {
+    let name: String
+    let value: String
+    let change: String
+    let isPositive: Bool
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(name)
+                .font(.caption)
+                .foregroundColor(.gray)
+            
+            Text(value)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+            
+            Text(change)
+                .font(.caption)
+                .foregroundColor(isPositive ? .green : .red)
         }
+        .padding()
     }
 }
 
-// MARK: - Example Enhanced Home View
-// This can be used as an enhancement to your existing HomeView
+// MARK: - Enhanced Home View (removed reference to MainTabView)
 struct EnhancedHomeView: View {
     var body: some View {
         NavigationView {
@@ -179,12 +144,10 @@ struct EnhancedHomeView: View {
                             .padding(.horizontal)
                         }
                     }
-                    
-                    // Other sections can be added here with enhanced styling
                 }
                 .padding(.vertical)
             }
-            .navigationBarHidden(true) // Hide default nav bar for custom header
+            .navigationBarHidden(true)
             .background(EnhancedTheme.background)
         }
     }

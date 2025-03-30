@@ -1,3 +1,4 @@
+// Stock_analyzerApp.swift
 import SwiftUI
 
 @main
@@ -8,4 +9,3 @@ struct Stock_analyzerApp: App {
         }
     }
 }
-

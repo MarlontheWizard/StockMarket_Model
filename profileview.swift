@@ -110,3 +110,4 @@ struct ProfileView: View {
         isAuthenticated = false
     }
 }
+

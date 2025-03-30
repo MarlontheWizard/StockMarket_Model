@@ -27,11 +27,10 @@ struct LoginView: View {
                     Spacer()
                     
                     // App Logo
-                    Image(systemName: "chart.line.uptrend.xyaxis")
+                    Image("AppLogo")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 80, height: 80)
-                        .foregroundColor(.white)
+                        .frame(width: 120, height: 120)
                     
                     Text("Stock Analyzer")
                         .font(.largeTitle)
