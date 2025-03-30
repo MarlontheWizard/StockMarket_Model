@@ -4,7 +4,12 @@ struct HomeView: View {
     @State private var customStocks: [Stock] = []
     @State private var defaultStocks: [Stock] = []
     @State private var marketStocks: [Stock] = []
-    
+    @State private var predictions: [Prediction] = [
+        Prediction(symbol: "AAPL", message: "Bullish trend expected over next 30 days", confidence: 0.85),
+        Prediction(symbol: "MSFT", message: "Moderate growth with potential volatility", confidence: 0.72),
+        Prediction(symbol: "TSLA", message: "Potential correction in short-term", confidence: 0.68)
+    ]
+
     @State private var showingAddStockPrompt = false
     @State private var showingInvalidStockAlert = false
     @State private var newStockInput = ""
@@ -12,7 +17,7 @@ struct HomeView: View {
     @State private var showChat = false
     @State private var navigateToPortfolio = false
 
-    let defaultSymbols = ["COF", "ITC.NS"]
+    let defaultSymbols = ["AAPL", "MSFT"]
     let marketSymbols = ["TSLA", "PFE", "NVDA"]
 
     var body: some View {
@@ -20,7 +25,7 @@ struct HomeView: View {
             ZStack {
                 ScrollView {
                     VStack(spacing: 16) {
-                        
+
                         // TODAY'S MARKET
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Today's Market")
@@ -60,6 +65,12 @@ struct HomeView: View {
                             }
                             .padding(.horizontal)
 
+                            if defaultStocks.isEmpty && customStocks.isEmpty {
+                                Text("No featured stocks to show.")
+                                    .foregroundColor(.gray)
+                                    .padding(.horizontal)
+                            }
+
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 12) {
                                     ForEach(defaultStocks) { stock in
@@ -87,9 +98,20 @@ struct HomeView: View {
                                 .padding(.horizontal)
 
                             VStack(spacing: 12) {
-                                PredictionCard(stockSymbol: "AAPL", stockName: "Apple Inc.", predictionText: "Bullish trend expected over next 30 days", confidence: 0.85)
-                                PredictionCard(stockSymbol: "MSFT", stockName: "Microsoft Corp.", predictionText: "Moderate growth with potential volatility", confidence: 0.72)
-                                PredictionCard(stockSymbol: "TSLA", stockName: "Tesla Inc.", predictionText: "Potential correction in short-term", confidence: 0.68)
+                                ForEach(predictions.filter { $0.stock != nil }) { prediction in
+                                    let stock = prediction.stock!
+                                    PredictionCard(
+                                        stockSymbol: stock.symbol,
+                                        stockName: stock.name,
+                                        predictionText: prediction.message,
+                                        confidence: prediction.confidence
+                                    )
+                                }
+
+                                ForEach(predictions.filter { $0.stock == nil }) { _ in
+                                    ProgressView()
+                                        .frame(maxWidth: .infinity)
+                                }
                             }
                             .padding(.horizontal)
                         }
@@ -121,6 +143,7 @@ struct HomeView: View {
             .onAppear {
                 loadDefaultStocks()
                 loadMarketStocks()
+                loadPredictionStocks()
             }
         }
         .alert("Add Stock", isPresented: $showingAddStockPrompt, actions: {
@@ -175,7 +198,10 @@ struct HomeView: View {
             fetchStockInfo(for: symbol) { result in
                 DispatchQueue.main.async {
                     if let stock = result {
+                        print("✅ Loaded stock: \(stock.symbol) - \(stock.name)")
                         defaultStocks.append(stock)
+                    } else {
+                        print("❌ Failed to load stock: \(symbol)")
                     }
                 }
             }
@@ -195,18 +221,47 @@ struct HomeView: View {
         }
     }
 
+    func loadPredictionStocks() {
+        for index in predictions.indices {
+            let symbol = predictions[index].symbol
+            fetchStockInfo(for: symbol) { result in
+                DispatchQueue.main.async {
+                    if let stock = result {
+                        predictions[index].stock = stock
+                    }
+                }
+            }
+        }
+    }
+
     func fetchStockInfo(for symbol: String, completion: @escaping (Stock?) -> Void) {
-        let apiKey = "ba8a9a72e3114293af6a80c4b75390d4"
+        let apiKey = "4347b40324b947c5a16bdc87d7c1ada8"
         let urlString = "https://api.twelvedata.com/quote?symbol=\(symbol)&apikey=\(apiKey)"
 
         guard let url = URL(string: urlString) else {
+            print("❌ Invalid URL for \(symbol)")
             completion(nil)
             return
         }
 
         URLSession.shared.dataTask(with: url) { data, response, error in
+            if let error = error {
+                print("❌ Network error: \(error.localizedDescription)")
+                completion(nil)
+                return
+            }
+
+            guard let data = data else {
+                print("❌ No data for \(symbol)")
+                completion(nil)
+                return
+            }
+
+            if let raw = String(data: data, encoding: .utf8) {
+                print("📦 Raw API response for \(symbol):\n\(raw)")
+            }
+
             guard
-                let data = data,
                 let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                 let name = json["name"] as? String,
                 let priceStr = json["close"] as? String,
@@ -214,6 +269,7 @@ struct HomeView: View {
                 let price = Double(priceStr),
                 let change = Double(changeStr)
             else {
+                print("⚠️ JSON parsing failed for \(symbol)")
                 completion(nil)
                 return
             }
@@ -238,6 +294,14 @@ struct Stock: Identifiable {
     let change: String
     let isPositive: Bool
     let history: [Double]
+}
+
+struct Prediction: Identifiable {
+    let id = UUID()
+    let symbol: String
+    let message: String
+    let confidence: Double
+    var stock: Stock? = nil
 }
 
 struct MinimalStockCard: View {
@@ -267,4 +331,3 @@ struct MinimalStockCard: View {
         .cornerRadius(12)
     }
 }
-
