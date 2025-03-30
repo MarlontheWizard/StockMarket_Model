@@ -66,7 +66,7 @@ struct PortfolioView: View {
                         HStack {
                             Text("Total Value")
                             Spacer()
-                            Text("$\(calculateTotalValue(), specifier: "%.2f")")
+                            Text("$\(calculateTotalValue() + calculateProjectedGrowth(), specifier: "%.2f")")
                                 .fontWeight(.bold)
                         }
                         .padding(.vertical, 4)
